@@ -9,6 +9,8 @@ val minecraftVersion: String by project
 
 dependencies {
     api(project(":common"))
+    compileOnly("${versionCatalog.module(VersionCatalogLibrary.Mixin)}:${versionCatalog.version(VersionCatalogVersion.Mixin)}")
+    annotationProcessor("${versionCatalog.module(VersionCatalogLibrary.Mixin)}:${versionCatalog.version(VersionCatalogVersion.Mixin)}:processor")
 }
 
 base {
@@ -25,4 +27,8 @@ java.toolchain {
 val mcpVer = minecraftVersion
 legacyForge {
     mcpVersion = mcpVer
+}
+
+mixin {
+    add(sourceSets.main.get(), "$modId.refmap.json")
 }

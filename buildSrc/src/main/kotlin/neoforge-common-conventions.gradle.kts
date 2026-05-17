@@ -11,6 +11,7 @@ val neoFormVer: String by project
 
 dependencies {
     api(project(":common"))
+    compileOnly("${versionCatalog.module(VersionCatalogLibrary.Mixin)}:${versionCatalog.version(VersionCatalogVersion.Mixin)}")
 }
 
 base {

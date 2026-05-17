@@ -25,6 +25,7 @@ val forgeFullVersion = "$minecraftVersion-$forgeVersion"
 val commonProject = ":$minecraftVersion-common"
 val sharedCommonProject = ":common"
 evaluationDependsOn(sharedCommonProject)
+val commonJar = project(commonProject).tasks.named<Jar>("jar")
 
 dependencies {
     implementation(project(commonProject))
@@ -115,12 +116,17 @@ mixin {
 // reobfJar passes the TSRG to ART via --names and fails with FileNotFoundException if missing.
 // This task creates an empty-but-valid placeholder so the build succeeds regardless.
 val ensureMixinRefmap = tasks.register("ensureMixinRefmap") {
+    dependsOn(project(commonProject).tasks.named("compileJava"))
     mustRunAfter(tasks.named("compileJava"))
     val tsrgPath = project.layout.buildDirectory.get().asFile.resolve("mixin/$modId.refmap.json.mappings.tsrg").absolutePath
+    val commonTsrgPath = project(commonProject).layout.buildDirectory.get().asFile.resolve("mixin/$modId.refmap.json.mappings.tsrg").absolutePath
     doLast {
         val tsrg = File(tsrgPath)
-        if (!tsrg.exists()) {
-            tsrg.parentFile.mkdirs()
+        val commonTsrg = File(commonTsrgPath)
+        tsrg.parentFile.mkdirs()
+        if (commonTsrg.exists()) {
+            commonTsrg.copyTo(tsrg, overwrite = true)
+        } else if (!tsrg.exists()) {
             tsrg.writeText("tsrg2 left right\n")
         }
     }
@@ -158,6 +164,9 @@ legacyForge.ideSyncTask(generateModMetadata)
 
 tasks.jar {
     from(project(sharedCommonProject).sourceSets.main.get().output)
-    from(project(commonProject).sourceSets.main.get().output)
+    dependsOn(commonJar)
+    from({ zipTree(commonJar.get().archiveFile.get().asFile) }) {
+        exclude("META-INF/**")
+    }
     manifest.attributes(mapOf("MixinConfigs" to "$modId.mixins.json"))
 }
